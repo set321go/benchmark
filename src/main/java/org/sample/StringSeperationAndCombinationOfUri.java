@@ -35,6 +35,7 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,49 +50,49 @@ public class StringSeperationAndCombinationOfUri {
     private static final CharMatcher CHAR_MATCHER = CharMatcher.anyOf("/");
 
     @Benchmark
-    public void guavaSplitJoin() {
+    public void guavaSplitJoin(Blackhole blackhole) {
         Iterable<String> stringIterable = SPLITTER.split(DUMMY_URI);
         Iterator<String> it = stringIterable.iterator();
-        String first = it.next();
-        String joined = JOINER.join(it);
+        blackhole.consume(it.next());
+        blackhole.consume(JOINER.join(it));
     }
 
     @Benchmark
-    public void javaxSplitJoin() {
+    public void javaxSplitJoin(Blackhole blackhole) {
         String[] stringParts = DUMMY_URI.split("/");
-        String first = stringParts[0];
+        blackhole.consume(stringParts[0]);
         stringParts = Arrays.copyOfRange(stringParts, 1, stringParts.length);
-        String joined = String.join(":", stringParts);
+        blackhole.consume(String.join(":", stringParts));
     }
 
     @Benchmark
-    public void indexOfSplit() {
+    public void indexOfSplit(Blackhole blackhole) {
         List<String> stringParts = split('/', DUMMY_URI);
-        String first = stringParts.remove(0);
-        String joined = stringParts.stream().collect(Collectors.joining(":"));
+        blackhole.consume(stringParts.remove(0));
+        blackhole.consume(stringParts.stream().collect(Collectors.joining(":")));
     }
 
     @Benchmark
-    public void streamingReplace() {
-        String result = DUMMY_URI.chars()
+    public void streamingReplace(Blackhole blackhole) {
+        blackhole.consume(DUMMY_URI.chars()
                 .map(c -> c == '/' ? ':' : c)
                 .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-                .toString();
+                .toString());
     }
 
     @Benchmark
-    public void guavaReplace() {
-        String joined = CHAR_MATCHER.replaceFrom(DUMMY_URI, ':');
+    public void guavaReplace(Blackhole blackhole) {
+        blackhole.consume(CHAR_MATCHER.replaceFrom(DUMMY_URI, ':'));
     }
 
     @Benchmark
-    public void javaxReplace() {
-        String joined = DUMMY_URI.replace('/', ':');
+    public void javaxReplace(Blackhole blackhole) {
+        blackhole.consume(DUMMY_URI.replace('/', ':'));
     }
 
     @Benchmark
-    public void indexOfReplace() {
-        String joined = replace('/', ':', DUMMY_URI);
+    public void indexOfReplace(Blackhole blackhole) {
+        blackhole.consume(replace('/', ':', DUMMY_URI));
     }
 
     private List<String> split(final char delimiter, final String input) {
