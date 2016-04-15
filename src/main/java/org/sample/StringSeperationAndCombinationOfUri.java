@@ -31,6 +31,7 @@
 
 package org.sample;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -45,6 +46,7 @@ public class StringSeperationAndCombinationOfUri {
     private static final String DUMMY_URI = "/application/scope/resource/M2M1YWIwYjctMTJjZi00MDA4LWI3OTYtYmU3OWViOGY3NWM0";
     private static final Splitter SPLITTER = Splitter.on('/');
     private static final Joiner JOINER = Joiner.on(':');
+    private static final CharMatcher CHAR_MATCHER = CharMatcher.anyOf("/");
 
     @Benchmark
     public void guavaSplitJoin() {
@@ -69,14 +71,30 @@ public class StringSeperationAndCombinationOfUri {
         String joined = stringParts.stream().collect(Collectors.joining(":"));
     }
 
-//    @Benchmark
-//    public void streamingStrings() {
-//        DUMMY_URI.chars().stre
-//        String first = stringParts.remove(0);
-//        String joined = stringParts.stream().collect(Collectors.joining(":"));
-//    }
+    @Benchmark
+    public void streamingReplace() {
+        String result = DUMMY_URI.chars()
+                .map(c -> c == '/' ? ':' : c)
+                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                .toString();
+    }
 
-    private List<String> split(final Character delimiter, final String input) {
+    @Benchmark
+    public void guavaReplace() {
+        String joined = CHAR_MATCHER.replaceFrom(DUMMY_URI, ':');
+    }
+
+    @Benchmark
+    public void javaxReplace() {
+        String joined = DUMMY_URI.replace('/', ':');
+    }
+
+    @Benchmark
+    public void indexOfReplace() {
+        String joined = replace('/', ':', DUMMY_URI);
+    }
+
+    private List<String> split(final char delimiter, final String input) {
         List<String> list = new ArrayList<String>();
         int pos = 0, end;
         while ((end = input.indexOf(delimiter, pos)) >= 0) {
@@ -85,6 +103,17 @@ public class StringSeperationAndCombinationOfUri {
         }
 
         return list;
+    }
+
+    private String replace(final char oldDelim, final char newDelim, final String input) {
+        StringBuilder sb = new StringBuilder(input);
+        int pos = 0, end;
+        while ((end = input.indexOf(oldDelim, pos)) >= 0) {
+            sb.setCharAt(end, newDelim);
+            pos = end + 1;
+        }
+
+        return sb.toString();
     }
 
 }
